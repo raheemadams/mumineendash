@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/*
+  MosqueOS design tokens — "Ledger & Tilework."
+
+  Grounded in the materials of the building itself rather than generic SaaS
+  teal: a deep jade (Persian tilework) as the primary action color, a muted
+  brass (mihrab fittings, minbar rail) as the one accent spent deliberately
+  (active states, focus rings, the geometric mark), and a warm plaster/stone
+  neutral instead of a stark white or cliché cream. Cards read like ledger
+  pages — hairline rules and a crisp small radius — rather than soft,
+  shadow-elevated app tiles.
+*/
+
+@theme {
+  --color-border: hsl(150 12% 85%);
+  --color-input: hsl(150 12% 85%);
+  --color-ring: hsl(32 40% 45%);
+  --color-background: hsl(45 22% 96%);
+  --color-foreground: hsl(155 20% 12%);
+
+  --color-primary: hsl(172 68% 21%);
+  --color-primary-foreground: hsl(45 30% 97%);
+
+  --color-secondary: hsl(45 18% 92%);
+  --color-secondary-foreground: hsl(155 20% 12%);
+
+  --color-muted: hsl(45 18% 92%);
+  --color-muted-foreground: hsl(155 8% 40%);
+
+  --color-accent: hsl(32 45% 93%);
+  --color-accent-foreground: hsl(32 45% 28%);
+
+  --color-brass: hsl(32 40% 45%);
+  --color-brass-foreground: hsl(45 30% 97%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(155 20% 12%);
+
+  --color-success: hsl(140 24% 38%);
+  --color-warning: hsl(35 55% 42%);
+  --color-danger: hsl(9 45% 40%);
+
+  --radius: 0.5rem;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-bricolage), var(--font-inter), ui-sans-serif, sans-serif;
+}
+
+.dark {
+  --color-border: hsl(160 14% 20%);
+  --color-input: hsl(160 14% 20%);
+  --color-ring: hsl(32 55% 58%);
+  --color-background: hsl(160 22% 8%);
+  --color-foreground: hsl(45 20% 94%);
+
+  --color-primary: hsl(168 45% 45%);
+  --color-primary-foreground: hsl(160 22% 8%);
+
+  --color-secondary: hsl(160 16% 14%);
+  --color-secondary-foreground: hsl(45 20% 94%);
+
+  --color-muted: hsl(160 16% 14%);
+  --color-muted-foreground: hsl(150 8% 62%);
+
+  --color-accent: hsl(32 30% 16%);
+  --color-accent-foreground: hsl(32 55% 72%);
+
+  --color-brass: hsl(32 55% 58%);
+  --color-brass-foreground: hsl(160 22% 8%);
+
+  --color-card: hsl(160 20% 10%);
+  --color-card-foreground: hsl(45 20% 94%);
+
+  --color-success: hsl(140 28% 55%);
+  --color-warning: hsl(35 60% 60%);
+  --color-danger: hsl(9 55% 60%);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* thin, unobtrusive scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+/* momentary highlight when a search result deep-links to a ledger row or deposit card */
+tr:target,
+div:target {
+  animation: search-target-highlight 2.2s ease-out 1;
+}
+@keyframes search-target-highlight {
+  0% {
+    background-color: var(--color-accent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
