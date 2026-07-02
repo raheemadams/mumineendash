@@ -9,3 +9,7 @@ next-env.d.ts
 /prisma/dev.db
 /prisma/dev.db-journal
 .DS_Store
+
+# Real member/financial data — never commit (PII)
+*.csv
+members.csv

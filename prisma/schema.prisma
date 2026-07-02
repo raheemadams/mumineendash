@@ -260,6 +260,7 @@ model Member {
 
   email            String?
   phone            String?
+  cellPhone        String?          // secondary/mobile number from the member export
   gender           Gender           @default(UNSPECIFIED)
   dateOfBirth      DateTime?
   addressLine1     String?
@@ -268,6 +269,8 @@ model Member {
   state            String?
   postalCode       String?
   country          String?          @default("USA")
+  nativeCountry    String?          // country of origin (from member export)
+  balance          Decimal?         @db.Decimal(12, 2) // imported account balance figure
 
   emergencyContactName  String?
   emergencyContactPhone String?

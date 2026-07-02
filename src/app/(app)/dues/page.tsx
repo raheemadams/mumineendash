@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useStore } from "@/lib/store/provider";
 import { membersDues } from "@/lib/store/selectors";
+import { DEFAULT_MEMBERSHIP_DUES } from "@/lib/config";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { DuesStatus } from "@/lib/engine/dues";
 
@@ -33,7 +34,12 @@ export default function DuesPage() {
     <div>
       <PageHeader
         title="Membership Dues"
-        description="Status is computed live from each plan's cadence, payments and grace window."
+        description={`Standard membership is ${formatCurrency(DEFAULT_MEMBERSHIP_DUES.amount)} per month. Status is computed live from each plan's cadence, payments and grace window.`}
+        action={
+          <Badge variant="secondary" className="text-sm">
+            {formatCurrency(DEFAULT_MEMBERSHIP_DUES.amount)} / month standard
+          </Badge>
+        }
       />
 
       <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -100,6 +106,12 @@ export default function DuesPage() {
               })}
             </TableBody>
           </Table>
+          {rows.length === 0 && (
+            <p className="p-8 text-center text-sm text-[var(--color-muted-foreground)]">
+              No dues plans yet. Standard membership is {formatCurrency(DEFAULT_MEMBERSHIP_DUES.amount)} per
+              month — enroll members to start tracking their dues here.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
