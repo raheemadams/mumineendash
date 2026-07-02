@@ -44,19 +44,29 @@ export default function MembersPage() {
   const { state, addMember } = useStore();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<NewMember>(empty);
 
+  // Status values actually present in the directory, with counts, for the filter.
+  const statusCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const m of state.members) map.set(m.status, (map.get(m.status) ?? 0) + 1);
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }, [state.members]);
+
   const filtered = useMemo(() => {
     const needle = q.toLowerCase().trim();
-    return state.members.filter(
-      (m) =>
-        !needle ||
-        m.fullName.toLowerCase().includes(needle) ||
-        m.email.toLowerCase().includes(needle) ||
-        m.memberCode.toLowerCase().includes(needle),
-    );
-  }, [state.members, q]);
+    return state.members
+      .filter((m) => (status === "all" ? true : m.status === status))
+      .filter(
+        (m) =>
+          !needle ||
+          m.fullName.toLowerCase().includes(needle) ||
+          m.email.toLowerCase().includes(needle) ||
+          m.memberCode.toLowerCase().includes(needle),
+      );
+  }, [state.members, q, status]);
 
   function submit() {
     if (!form.firstName || !form.lastName) return;
@@ -128,9 +138,22 @@ export default function MembersPage() {
         }
       />
 
-      <div className="mb-3 relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
-        <Input className="pl-9" placeholder="Search members…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
+          <Input className="pl-9" placeholder="Search members…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <NativeSelect value={status} onChange={(e) => setStatus(e.target.value)} className="max-w-[220px]">
+          <option value="all">All statuses ({state.members.length})</option>
+          {statusCounts.map(([s, count]) => (
+            <option key={s} value={s}>
+              {s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ")} ({count})
+            </option>
+          ))}
+        </NativeSelect>
+        <span className="text-sm text-[var(--color-muted-foreground)]">
+          {filtered.length} shown
+        </span>
       </div>
 
       <Card>
