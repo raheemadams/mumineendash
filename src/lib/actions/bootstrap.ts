@@ -7,6 +7,7 @@
 
 import { listMembers, listFamilies } from "@/lib/db/members";
 import { listAccounts } from "@/lib/db/accounts";
+import { listLedgerCategories } from "@/lib/db/categories";
 import { listCategories, listDonations, listCampaigns, listEvents } from "@/lib/db/donations";
 import { listDuesPlans, listDuesPayments } from "@/lib/db/dues";
 import { listTransactions } from "@/lib/db/transactions";
@@ -23,6 +24,7 @@ export async function loadAppState(): Promise<BootstrapState> {
     families,
     accounts,
     categories,
+    ledgerCategories,
     donations,
     campaigns,
     events,
@@ -37,6 +39,7 @@ export async function loadAppState(): Promise<BootstrapState> {
     listFamilies(),
     listAccounts(),
     listCategories(),
+    listLedgerCategories(),
     listDonations(),
     listCampaigns(),
     listEvents(),
@@ -53,6 +56,7 @@ export async function loadAppState(): Promise<BootstrapState> {
     families,
     accounts,
     categories,
+    ledgerCategories,
     donations,
     campaigns,
     events,

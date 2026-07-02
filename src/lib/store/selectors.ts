@@ -4,6 +4,23 @@
 import type { AppState, Txn } from "./types";
 import { evaluateDues, type DuesEvaluation } from "@/lib/engine/dues";
 
+/**
+ * Format a "YYYY-MM" bucket key as a short month label ("Jan 26").
+ *
+ * Must build the Date with the LOCAL constructor `new Date(year, monthIndex, 1)`,
+ * not `new Date("2026-01-01")`. The string form is parsed as UTC midnight, and
+ * `toLocaleDateString` then renders it in the local zone — in any timezone west
+ * of UTC that rolls back to the previous day, mislabeling every month (e.g.
+ * January 2026 shows as "Dec 25"). The numeric constructor is timezone-safe.
+ */
+function monthLabel(key: string): string {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+    month: "short",
+    year: "2-digit",
+  });
+}
+
 export function accountBalance(state: AppState, accountId: string): number {
   const acct = state.accounts.find((a) => a.id === accountId);
   const base = acct?.openingBalance ?? 0;
@@ -43,7 +60,7 @@ export function monthlyGiving(state: AppState): { month: string; amount: number 
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, amount]) => ({
-      month: new Date(key + "-01").toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+      month: monthLabel(key),
       amount,
     }));
 }
@@ -62,7 +79,7 @@ export function monthlyCashFlow(state: AppState): { month: string; inflow: numbe
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, row]) => ({
-      month: new Date(key + "-01").toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+      month: monthLabel(key),
       inflow: row.inflow,
       outflow: row.outflow,
       net: row.inflow - row.outflow,
@@ -178,7 +195,7 @@ export function membershipGrowth(state: AppState): { month: string; total: numbe
   return months.map((key) => {
     running += byMonth.get(key) ?? 0;
     return {
-      month: new Date(key + "-01").toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+      month: monthLabel(key),
       total: running,
     };
   });

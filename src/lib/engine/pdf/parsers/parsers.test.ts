@@ -219,14 +219,23 @@ Mar 20 From Another Donor, including processing fee Cash App payment $2.75 + $97
     expect(isCashAppStatement(text)).toBe(true);
   });
 
-  it("infers the year from the statement header and parses signed amounts", () => {
+  it("records the gross gift and posts the fee as a separate expense", () => {
     const rows = parseCashAppStatement(text);
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ date: "03/13/2026", amount: 14.46 });
-    expect(rows[1]).toMatchObject({ date: "03/20/2026", amount: 97.25 });
+    // 2 payments → 2 gross inflows + 2 fee expense lines
+    expect(rows).toHaveLength(4);
+
+    // $14.46 net + $0.54 fee = $15.00 gross
+    expect(rows[0]).toMatchObject({ date: "03/13/2026", amount: 15 });
+    expect(rows[1]).toMatchObject({ date: "03/13/2026", amount: -0.54 });
+    expect(rows[1].description).toMatch(/processing fee/i);
+    expect(rows[1].description).toContain("Sample Donor");
+
+    // $97.25 net + $2.75 fee = $100.00 gross
+    expect(rows[2]).toMatchObject({ date: "03/20/2026", amount: 100 });
+    expect(rows[3]).toMatchObject({ date: "03/20/2026", amount: -2.75 });
   });
 
-  it("drops the Fee column figure from the description", () => {
+  it("drops the Fee column figure from the gift description", () => {
     const rows = parseCashAppStatement(text);
     expect(rows[0].description).not.toMatch(/\$0\.54/);
     expect(rows[0].description).toContain("Sample Donor");

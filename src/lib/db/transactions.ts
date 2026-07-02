@@ -73,3 +73,19 @@ export async function markTransactionReconciled(txnId: string, depositBatchId: s
     data: { reconStatus: "RECONCILED", depositBatchId },
   });
 }
+
+/** Sets (or clears, when category is null) the purpose category on a ledger row. */
+export async function setTransactionCategory(txnId: string, category: string | null): Promise<void> {
+  await prisma.transaction.update({
+    where: { id: txnId },
+    data: { category },
+  });
+}
+
+/** Updates the human-readable description on a ledger row. */
+export async function setTransactionDescription(txnId: string, description: string | null): Promise<void> {
+  await prisma.transaction.update({
+    where: { id: txnId },
+    data: { description },
+  });
+}

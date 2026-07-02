@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Copy, FileText, FileUp, Loader2, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import {
   type AmountStyle,
   type LedgerTxn,
   type NormalizedTxn,
+  type DuplicateVerdict,
 } from "@/lib/engine";
 import { useStore } from "@/lib/store/provider";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -53,6 +55,11 @@ export default function ImportPage() {
   const [fieldMap, setFieldMap] = useState<FieldMap>({ date: "" });
   const [amountStyle, setAmountStyle] = useState<AmountStyle>("single");
   const [committed, setCommitted] = useState<{ inserted: number; blocked: number } | null>(null);
+  // Snapshot the verdicts as they were at the moment of commit. Without this,
+  // the live preview would re-evaluate the just-committed rows against the
+  // now-updated ledger and flip every row to "Duplicate 100%", making a
+  // successful import look like it was rejected.
+  const [snapshot, setSnapshot] = useState<DuplicateVerdict[] | null>(null);
   const [pdfSource, setPdfSource] = useState<string | null>(null);
 
   // Accounts load asynchronously — backfill the default once they arrive.
@@ -87,6 +94,27 @@ export default function ImportPage() {
     cashapp: "Cash App",
   };
 
+  // Keywords to match a detected statement source to one of the configured
+  // accounts, so each upload auto-selects the right destination instead of
+  // silently defaulting to the first account (which filed everything under
+  // Bank of America).
+  const SOURCE_ACCOUNT_KEYWORDS: Record<string, string[]> = {
+    boa: ["bank of america", "bofa"],
+    bot: ["bank of texas"],
+    paypal: ["paypal"],
+    cashapp: ["cash app", "cashapp"],
+  };
+
+  function matchAccountForSource(source: string): string | null {
+    const keywords = SOURCE_ACCOUNT_KEYWORDS[source];
+    if (!keywords) return null;
+    const acct = state.accounts.find((a) => {
+      const hay = `${a.name} ${a.institution}`.toLowerCase();
+      return keywords.some((k) => hay.includes(k));
+    });
+    return acct?.id ?? null;
+  }
+
   async function ingestPdf(file: File) {
     setPdfError(null);
     setPdfBusy(true);
@@ -95,6 +123,8 @@ export default function ImportPage() {
       const buffer = await file.arrayBuffer();
       const result = await parsePdfStatement(buffer);
       setPdfSource(SOURCE_LABELS[result.source] ?? result.source);
+      const matched = matchAccountForSource(result.source);
+      if (matched) setAccountId(matched);
       ingestRows(result.headers, result.rows);
     } catch (err) {
       setPdfError(err instanceof Error ? err.message : "Could not read this PDF.");
@@ -149,11 +179,24 @@ export default function ImportPage() {
 
   async function commit() {
     if (!result) return;
+    // Freeze what we're about to commit so the post-commit view reflects this
+    // batch's status, not a re-check against the ledger it just joined.
+    setSnapshot(result.verdicts);
     const res = await commitImport(
       accountId,
       result.verdicts.map((v) => ({ txn: v.candidate, isDuplicate: v.isDuplicate })),
     );
     setCommitted(res);
+  }
+
+  function resetFlow() {
+    setStep("upload");
+    setHeaders([]);
+    setRows([]);
+    setFieldMap({ date: "" });
+    setPdfSource(null);
+    setCommitted(null);
+    setSnapshot(null);
   }
 
   return (
@@ -300,11 +343,46 @@ export default function ImportPage() {
 
       {step === "review" && result && summary && (
         <div className="space-y-4">
+          {committed && (
+            <Card className="border-[var(--color-success)]/40 bg-[var(--color-success)]/5">
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--color-success)]" />
+                  <span className="text-sm font-medium">
+                    Imported {committed.inserted}{" "}
+                    {committed.inserted === 1 ? "entry" : "entries"} to the ledger.
+                    {committed.blocked > 0 &&
+                      ` ${committed.blocked} were already in the ledger and were skipped — cash is counted exactly once.`}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/transactions">View ledger</Link>
+                  </Button>
+                  <Button size="sm" onClick={resetFlow}>
+                    Import another statement
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <MiniStat label="New entries" value={summary.fresh} tone="success" />
-            <MiniStat label="Needs review" value={summary.review} tone="warning" />
-            <MiniStat label="Duplicates blocked" value={summary.dup} tone="danger" />
-            <MiniStat label="Parse errors" value={summary.errors} tone="warning" />
+            {committed ? (
+              <>
+                <MiniStat label="Imported" value={committed.inserted} tone="success" />
+                <MiniStat label="Skipped (already in ledger)" value={committed.blocked} tone="warning" />
+                <MiniStat label="Parse errors" value={summary.errors} tone="warning" />
+                <MiniStat label="Rows in file" value={result.verdicts.length} tone="success" />
+              </>
+            ) : (
+              <>
+                <MiniStat label="New entries" value={summary.fresh} tone="success" />
+                <MiniStat label="Needs review" value={summary.review} tone="warning" />
+                <MiniStat label="Duplicates blocked" value={summary.dup} tone="danger" />
+                <MiniStat label="Parse errors" value={summary.errors} tone="warning" />
+              </>
+            )}
           </div>
 
           <Card>
@@ -324,7 +402,7 @@ export default function ImportPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {result.verdicts.map((v, i) => {
+                  {(committed && snapshot ? snapshot : result.verdicts).map((v, i) => {
                     const t: NormalizedTxn = v.candidate;
                     return (
                       <TableRow key={i}>
@@ -340,7 +418,13 @@ export default function ImportPage() {
                           {t.referenceNumber ?? "—"}
                         </TableCell>
                         <TableCell>
-                          {v.isDuplicate ? (
+                          {committed ? (
+                            v.isDuplicate ? (
+                              <Badge variant="warning">Skipped</Badge>
+                            ) : (
+                              <Badge variant="success">Imported</Badge>
+                            )
+                          ) : v.isDuplicate ? (
                             <Badge variant="danger" title={v.reasons.join(", ")}>
                               Duplicate {Math.round(v.score * 100)}%
                             </Badge>
@@ -376,22 +460,16 @@ export default function ImportPage() {
             </CardContent>
           </Card>
 
-          {committed ? (
-            <Card className="border-[var(--color-success)]/40 bg-[var(--color-success)]/5">
-              <CardContent className="flex items-center gap-3 py-4">
-                <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />
-                <span className="text-sm font-medium">
-                  Committed {committed.inserted} entries to the ledger. {committed.blocked} duplicate(s)
-                  were prevented — the cash is counted exactly once. View them on the Ledger page.
-                </span>
-              </CardContent>
-            </Card>
-          ) : (
+          {!committed && (
             <div className="flex justify-between">
               <Button variant="ghost" onClick={() => setStep("map")}>
                 Back to mapping
               </Button>
-              <Button onClick={commit}>Commit {summary.fresh + summary.review} entries to ledger</Button>
+              <Button onClick={commit} disabled={summary.fresh + summary.review === 0}>
+                {summary.fresh + summary.review === 0
+                  ? "Nothing new to import"
+                  : `Commit ${summary.fresh + summary.review} entries to ledger`}
+              </Button>
             </div>
           )}
         </div>

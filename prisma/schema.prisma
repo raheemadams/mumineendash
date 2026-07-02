@@ -370,6 +370,19 @@ model DonationCategory {
   donations   Donation[]
 }
 
+// User-managed "purpose of the money" list picked per ledger row
+// (Transaction.category stores the chosen name as a plain string). `kind`
+// controls which directions a purpose is offered for: INCOME | EXPENSE | BOTH.
+model LedgerCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  kind      String   @default("BOTH") // INCOME | EXPENSE | BOTH
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Donation {
   id            String           @id @default(uuid())
   categoryId    String

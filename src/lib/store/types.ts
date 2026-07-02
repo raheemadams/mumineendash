@@ -106,6 +106,15 @@ export interface DonationCategory {
   sortOrder: number;
 }
 
+/** User-managed ledger "purpose" category. kind gates which directions it's offered for. */
+export interface LedgerCategory {
+  id: string;
+  name: string;
+  kind: "INCOME" | "EXPENSE" | "BOTH";
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface Donation {
   id: string;
   categoryId: string;
@@ -202,6 +211,7 @@ export interface AppState {
   families: Family[];
   accounts: Account[];
   categories: DonationCategory[];
+  ledgerCategories: LedgerCategory[];
   donations: Donation[];
   campaigns: Campaign[];
   events: MosqueEvent[];

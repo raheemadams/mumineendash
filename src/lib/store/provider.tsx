@@ -9,6 +9,13 @@ import { recordDuesPaymentAction } from "@/lib/actions/dues";
 import { commitImportAction } from "@/lib/actions/import";
 import { addDepositAction, reconcileDepositAction } from "@/lib/actions/deposits";
 import { addPastoralNoteAction } from "@/lib/actions/pastoral";
+import { setTransactionCategoryAction, setTransactionDescriptionAction } from "@/lib/actions/transactions";
+import {
+  createCategoryAction,
+  renameCategoryAction,
+  setCategoryKindAction,
+  deleteCategoryAction,
+} from "@/lib/actions/categories";
 import type { NewMember, NewDonation, NewDeposit, NewPastoralNote } from "./action-types";
 import type { NormalizedTxn } from "@/lib/engine/types";
 
@@ -28,6 +35,7 @@ function emptyState(role: Role): AppState {
     families: [],
     accounts: [],
     categories: [],
+    ledgerCategories: [],
     donations: [],
     campaigns: [],
     events: [],
@@ -53,6 +61,12 @@ interface Store {
     rows: { txn: NormalizedTxn; isDuplicate: boolean }[],
   ) => Promise<{ inserted: number; blocked: number }>;
   reconcileDeposit: (depositId: string, txnId: string) => Promise<void>;
+  setTransactionCategory: (txnId: string, category: string | null) => Promise<void>;
+  setTransactionDescription: (txnId: string, description: string) => Promise<void>;
+  createCategory: (name: string, kind: string) => Promise<void>;
+  renameCategory: (id: string, name: string) => Promise<void>;
+  setCategoryKind: (id: string, kind: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   addDeposit: (data: NewDeposit) => Promise<void>;
   addPastoralNote: (data: NewPastoralNote) => Promise<void>;
   markNotificationRead: (id: string) => void;
@@ -139,6 +153,63 @@ export function StoreProvider({
     [refresh],
   );
 
+  const setTransactionCategory = useCallback<Store["setTransactionCategory"]>(
+    async (txnId, category) => {
+      // Optimistic: reflect the pick immediately, then persist.
+      setState((s) => ({
+        ...s,
+        ledger: s.ledger.map((t) => (t.id === txnId ? { ...t, category } : t)),
+      }));
+      await setTransactionCategoryAction(txnId, category);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const setTransactionDescription = useCallback<Store["setTransactionDescription"]>(
+    async (txnId, description) => {
+      setState((s) => ({
+        ...s,
+        ledger: s.ledger.map((t) => (t.id === txnId ? { ...t, description } : t)),
+      }));
+      await setTransactionDescriptionAction(txnId, description);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const createCategory = useCallback<Store["createCategory"]>(
+    async (name, kind) => {
+      await createCategoryAction(name, kind);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const renameCategory = useCallback<Store["renameCategory"]>(
+    async (id, name) => {
+      await renameCategoryAction(id, name);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const setCategoryKind = useCallback<Store["setCategoryKind"]>(
+    async (id, kind) => {
+      await setCategoryKindAction(id, kind);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const deleteCategory = useCallback<Store["deleteCategory"]>(
+    async (id) => {
+      await deleteCategoryAction(id);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const addDeposit = useCallback<Store["addDeposit"]>(
     async (data) => {
       await addDepositAction(data);
@@ -182,6 +253,12 @@ export function StoreProvider({
       recordDuesPayment,
       commitImport,
       reconcileDeposit,
+      setTransactionCategory,
+      setTransactionDescription,
+      createCategory,
+      renameCategory,
+      setCategoryKind,
+      deleteCategory,
       addDeposit,
       addPastoralNote,
       markNotificationRead,
@@ -198,6 +275,12 @@ export function StoreProvider({
       recordDuesPayment,
       commitImport,
       reconcileDeposit,
+      setTransactionCategory,
+      setTransactionDescription,
+      createCategory,
+      renameCategory,
+      setCategoryKind,
+      deleteCategory,
       addDeposit,
       addPastoralNote,
       markNotificationRead,

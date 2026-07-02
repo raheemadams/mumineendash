@@ -11,12 +11,20 @@
 // Every entry is one line. Dates are "Mon DD" with no year — inferred from
 // the "<Month> <Year>" statement header line. Amounts carry an explicit
 // leading sign ("+ $14.46" / "- $12.00").
+//
+// IMPORTANT — the "Amount" column is NET of Cash App's processing fee: a member
+// who sent a clean $15.00 shows as "$0.54 fee" + "$14.46 amount". Recording the
+// net understates every gift. So for incoming payments we record the GROSS the
+// member actually gave (net + fee) as the inflow, and post the fee as a separate
+// expense line — giving records stay accurate and the books still tie out to the
+// net that hit the balance.
 
 import type { PdfTxnRow } from "../types";
 
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 const DATE_AT_START = /^([A-Za-z]{3})\s+(\d{1,2})\b/;
 const TRAILING_AMOUNT = /([+-])\s*\$?(-?[\d,]+\.\d{2})\s*$/;
+const MONEY = /\$([\d,]+\.\d{2})/;
 
 export function isCashAppStatement(text: string): boolean {
   return /cash app/i.test(text) && /account statement/i.test(text);
@@ -47,16 +55,35 @@ export function parseCashAppStatement(text: string): PdfTxnRow[] {
 
     const date = `${String(monthIdx + 1).padStart(2, "0")}/${dateMatch[2].padStart(2, "0")}/${year}`;
     const sign = amountMatch[1] === "-" ? -1 : 1;
-    const amount = Number(amountMatch[2].replace(/,/g, ""));
-    if (!Number.isFinite(amount)) continue;
+    const net = Number(amountMatch[2].replace(/,/g, ""));
+    if (!Number.isFinite(net)) continue;
 
-    const description = line
-      .slice(dateMatch[0].length, line.length - amountMatch[0].length)
-      .replace(/\$[\d,]+\.\d{2}/g, "") // drop the Fee column figure
-      .replace(/\s+/g, " ")
-      .trim();
+    // The middle segment holds the description plus the Fee column figure.
+    const middle = line.slice(dateMatch[0].length, line.length - amountMatch[0].length);
+    const feeMatch = middle.match(MONEY);
+    const fee = feeMatch ? Number(feeMatch[1].replace(/,/g, "")) : 0;
 
-    rows.push({ date, description: description || "Cash App transaction", amount: sign * Math.abs(amount) });
+    const description =
+      middle
+        .replace(/\$[\d,]+\.\d{2}/g, "") // drop the Fee column figure
+        .replace(/\s+/g, " ")
+        .trim() || "Cash App transaction";
+
+    // Incoming payment with a fee: record gross as the gift, fee as an expense.
+    if (sign > 0 && fee > 0) {
+      const gross = Math.round((net + fee) * 100) / 100;
+      // Keep the payer name on the fee line so distinct same-amount fees on the
+      // same day don't collapse into one another under duplicate detection.
+      const payer = description.match(/^From\s+(.+?),/i)?.[1]?.trim();
+      rows.push({ date, description, amount: gross });
+      rows.push({
+        date,
+        description: `Cash App processing fee — ${payer ?? description}`,
+        amount: -fee,
+      });
+    } else {
+      rows.push({ date, description, amount: sign * Math.abs(net) });
+    }
   }
 
   return rows;

@@ -10,6 +10,7 @@ import {
   ScrollText,
   FileBarChart,
   ShieldCheck,
+  Tags,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export const navItems: NavItem[] = [
   { href: "/reconciliation", label: "Reconciliation", icon: BookOpenCheck, group: "Finance" },
 
   { href: "/reports", label: "Reports", icon: FileBarChart, group: "Governance" },
+  { href: "/categories", label: "Categories", icon: Tags, group: "Governance" },
   { href: "/audit", label: "Audit Log", icon: ShieldCheck, group: "Governance" },
 ];
 

@@ -44,10 +44,35 @@ const DONATION_CATEGORIES = [
   ["investment", "Investment Fund"],
 ];
 
+// Default ledger "purpose" categories (editable later via the Categories admin
+// page). kind = INCOME | EXPENSE | BOTH.
+const LEDGER_CATEGORIES: { name: string; kind: string }[] = [
+  { name: "General Donation", kind: "INCOME" },
+  { name: "Jumah Donation", kind: "INCOME" },
+  { name: "Membership Dues", kind: "INCOME" },
+  { name: "Ramadan", kind: "INCOME" },
+  { name: "Sadaqa", kind: "INCOME" },
+  { name: "Zakat", kind: "INCOME" },
+  { name: "Administrative Expenses", kind: "EXPENSE" },
+  { name: "Bank Charges", kind: "EXPENSE" },
+  { name: "BLOOM Expense", kind: "EXPENSE" },
+  { name: "Fiqh / Halaqa Expense", kind: "EXPENSE" },
+  { name: "Hall Rental", kind: "EXPENSE" },
+  { name: "Maintenance Expense", kind: "EXPENSE" },
+  { name: "Mumineen HUB Expense", kind: "EXPENSE" },
+  { name: "Ramadan Expense", kind: "EXPENSE" },
+  { name: "Supplies", kind: "EXPENSE" },
+  { name: "Technology Expense", kind: "EXPENSE" },
+  { name: "Utilities", kind: "EXPENSE" },
+  { name: "Lawncare", kind: "EXPENSE" },
+  { name: "Others", kind: "BOTH" },
+];
+
 const ACCOUNTS: { key: string; name: string; institution: string; type: any; mask: string; openingBalance: number }[] = [
-  { key: "acct-boa", name: "Bank of America — Operating", institution: "Bank of America", type: "CHECKING", mask: "4821", openingBalance: 80000 },
-  { key: "acct-bot", name: "Bank of Texas — Building Fund", institution: "Bank of Texas", type: "SAVINGS", mask: "9930", openingBalance: 150000 },
-  { key: "acct-paypal", name: "PayPal", institution: "PayPal", type: "PAYPAL", mask: "0000", openingBalance: 2600 },
+  { key: "acct-boa", name: "Bank of America — Operating", institution: "Bank of America", type: "CHECKING", mask: "4821", openingBalance: 0 },
+  { key: "acct-bot", name: "Bank of Texas — Building Fund", institution: "Bank of Texas", type: "SAVINGS", mask: "9930", openingBalance: 0 },
+  { key: "acct-paypal", name: "PayPal", institution: "PayPal", type: "PAYPAL", mask: "0000", openingBalance: 0 },
+  { key: "acct-cashapp", name: "Cash App", institution: "Cash App", type: "MERCHANT", mask: "0000", openingBalance: 0 },
   { key: "acct-cash", name: "Cash Box", institution: "On-site", type: "CASH_BOX", mask: "0000", openingBalance: 0 },
 ];
 
@@ -75,7 +100,16 @@ async function seedReferenceData() {
     await prisma.donationCategory.upsert({ where: { key }, update: {}, create: { key, name, sortOrder: i } });
   }
 
-  console.log("✓ Seeded roles, permissions, and donation categories.");
+  for (let i = 0; i < LEDGER_CATEGORIES.length; i++) {
+    const { name, kind } = LEDGER_CATEGORIES[i];
+    await prisma.ledgerCategory.upsert({
+      where: { name },
+      update: { kind, sortOrder: i },
+      create: { name, kind, sortOrder: i },
+    });
+  }
+
+  console.log("✓ Seeded roles, permissions, donation categories, and ledger categories.");
 }
 
 /**

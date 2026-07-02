@@ -8,6 +8,7 @@ export function seedState(): AppState {
   return {
     currentRole: "TREASURER",
     readNotificationIds: [],
+    ledgerCategories: [],
 
     families: [
       { id: "f1", familyName: "Ali" },
