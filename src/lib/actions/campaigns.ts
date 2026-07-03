@@ -22,23 +22,35 @@ const mergeName = (template: string, m: { fullName: string; firstName: string })
     .replace(/\{\{\s*name\s*\}\}/gi, m.fullName)
     .replace(/\{\{\s*firstName\s*\}\}/gi, m.firstName);
 
-// An inline-styled "Pay" button — email clients strip <style>/classes, so all
-// styling is inline.
-const PAY_BUTTON_HTML = `<div style="margin:24px 0;"><a href="${PAYMENT_URL}" style="display:inline-block;background:#0f5c4a;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">${PAYMENT_BUTTON_LABEL}</a></div><div style="font-size:12px;color:#6b7c76;">Or open this link: <a href="${PAYMENT_URL}" style="color:#0f5c4a;">${PAYMENT_URL}</a></div>`;
+// A centered, inline-styled "Pay" button — email clients strip <style>/classes,
+// so styling is inline. No visible URL (the button itself carries the link).
+const PAY_BUTTON_HTML = `<div style="text-align:center;margin:28px 0;"><a href="${PAYMENT_URL}" style="display:inline-block;background:#0f5c4a;color:#ffffff;text-decoration:none;padding:13px 30px;border-radius:8px;font-weight:600;">${PAYMENT_BUTTON_LABEL}</a></div>`;
 
-/** Fill merge fields and render plain-text + HTML, optionally with the pay button. */
+/**
+ * Fill merge fields and render plain-text + HTML. The `{{payButton}}` marker in
+ * the body is where the button goes; if the marker is absent but the button is
+ * enabled, it's appended at the end. Plain-text keeps the URL (no button there).
+ */
 function renderEmail(
   bodyTemplate: string,
   m: { fullName: string; firstName: string },
   includePayButton: boolean,
 ): { text: string; html: string } {
   const merged = mergeName(bodyTemplate, m);
-  let text = merged;
-  let htmlBody = escapeHtml(merged).replace(/\n/g, "<br>");
-  if (includePayButton) {
-    text += `\n\n${PAYMENT_BUTTON_LABEL}: ${PAYMENT_URL}`;
+  const hasMarker = /\{\{\s*payButton\s*\}\}/i.test(merged);
+
+  const textButton = includePayButton ? `${PAYMENT_BUTTON_LABEL}: ${PAYMENT_URL}` : "";
+  let text = merged.replace(/\{\{\s*payButton\s*\}\}/gi, textButton);
+
+  let htmlBody = escapeHtml(merged)
+    .replace(/\n/g, "<br>")
+    .replace(/\{\{\s*payButton\s*\}\}/gi, includePayButton ? PAY_BUTTON_HTML : "");
+
+  if (includePayButton && !hasMarker) {
+    text += `\n\n${textButton}`;
     htmlBody += PAY_BUTTON_HTML;
   }
+
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;color:#1a2b26;line-height:1.6;">${htmlBody}</div>`;
   return { text, html };
 }

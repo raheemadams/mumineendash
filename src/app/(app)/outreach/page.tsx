@@ -24,6 +24,10 @@ const DEFAULT_BODY = `Assalamu alaikum {{firstName}},
 
 We noticed your Masjid Mumineen membership is currently inactive, and we'd love to welcome you back. You can renew your membership securely online using the button below.
 
+{{payButton}}
+
+On the donation page, please choose "Membership Dues" as the category.
+
 JazakAllahu khairan,
 Masjid Mumineen`;
 
@@ -138,8 +142,9 @@ export default function OutreachPage() {
               </label>
               <p className="text-xs text-[var(--color-muted-foreground)]">
                 Tip: <code className="rounded bg-[var(--color-muted)] px-1">{"{{firstName}}"}</code> and{" "}
-                <code className="rounded bg-[var(--color-muted)] px-1">{"{{name}}"}</code> are replaced with each
-                member&apos;s name.
+                <code className="rounded bg-[var(--color-muted)] px-1">{"{{name}}"}</code> fill in each member&apos;s
+                name; <code className="rounded bg-[var(--color-muted)] px-1">{"{{payButton}}"}</code> marks where the
+                centered button appears.
               </p>
 
               <label className="flex items-start gap-2 rounded-[var(--radius)] border border-[var(--color-border)] p-3">
@@ -173,17 +178,23 @@ export default function OutreachPage() {
                   </div>
                   <div className="border-b border-[var(--color-border)] px-4 py-2 font-medium">{previewSubject}</div>
                   <div className="px-4 py-3 text-sm">
-                    <div className="whitespace-pre-wrap">{previewBody}</div>
-                    {includePay && (
-                      <div className="mt-4 space-y-1.5">
-                        <span className="inline-block rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-primary-foreground)]">
-                          {PAYMENT_BUTTON_LABEL}
-                        </span>
-                        <div className="text-xs text-[var(--color-muted-foreground)]">
-                          Or open this link: <span className="text-[var(--color-primary)] underline">{PAYMENT_URL}</span>
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      const [before, ...rest] = previewBody.split(/\{\{\s*payButton\s*\}\}/i);
+                      const after = rest.join("").replace(/^\n+/, "");
+                      return (
+                        <>
+                          <div className="whitespace-pre-wrap">{before.replace(/\n+$/, "")}</div>
+                          {includePay && (
+                            <div className="my-5 text-center">
+                              <span className="inline-block rounded-lg bg-[var(--color-primary)] px-7 py-3 text-sm font-semibold text-[var(--color-primary-foreground)]">
+                                {PAYMENT_BUTTON_LABEL}
+                              </span>
+                            </div>
+                          )}
+                          {after && <div className="whitespace-pre-wrap">{after}</div>}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               ) : (
