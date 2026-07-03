@@ -16,3 +16,15 @@ export const DEFAULT_MEMBERSHIP_DUES: {
   frequency: "MONTHLY",
   graceDays: 15,
 };
+
+/**
+ * A shared broadcast address used as a placeholder on many imported members.
+ * It's not an individual inbox, so outreach emails skip it (and blank emails).
+ */
+export const PLACEHOLDER_EMAIL = "mumineenbroadcast@gmail.com";
+
+/** True when the address looks like a real, individually-deliverable email. */
+export function isDeliverableEmail(email: string | null | undefined): boolean {
+  const e = (email ?? "").trim().toLowerCase();
+  return e.length > 0 && e !== PLACEHOLDER_EMAIL && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+}

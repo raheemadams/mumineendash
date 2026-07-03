@@ -11,6 +11,7 @@ import {
   FileBarChart,
   ShieldCheck,
   Tags,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const navItems: NavItem[] = [
   { href: "/members", label: "Members", icon: Users, group: "Community" },
   { href: "/donations", label: "Donations", icon: HeartHandshake, group: "Community" },
   { href: "/dues", label: "Membership Dues", icon: Receipt, group: "Community" },
+  { href: "/outreach", label: "Outreach", icon: Mail, group: "Community" },
 
   { href: "/accounts", label: "Accounts", icon: Landmark, group: "Finance" },
   { href: "/import", label: "Import Statements", icon: Upload, group: "Finance" },
