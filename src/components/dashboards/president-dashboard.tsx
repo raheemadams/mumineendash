@@ -30,10 +30,21 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const PIE = ["#0d9488", "#14b8a6", "#2dd4bf", "#5eead4", "#99f6e4", "#ccfbf1"];
+// Membership-status slice colors — Inactive stands out in red as "needs attention".
+const STATUS_COLOR: Record<string, string> = {
+  ACTIVE: "#0f5c4a", // jade
+  INACTIVE: "#c0392b", // red
+  PENDING: "#a3763f", // brass
+  SUSPENDED: "#7f2d20", // dark red
+  DECEASED: "#6b7c76", // muted
+  MOVED_AWAY: "#9aa8a2",
+};
+const statusColor = (status: string, i: number) => STATUS_COLOR[status] ?? PIE[i % PIE.length];
+
 const STATUS_TONE: Record<string, "success" | "secondary" | "warning" | "danger"> = {
   ACTIVE: "success",
   PENDING: "warning",
-  INACTIVE: "secondary",
+  INACTIVE: "danger",
   SUSPENDED: "danger",
 };
 
@@ -103,17 +114,23 @@ export function PresidentDashboard() {
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={statusBreakdown} dataKey="count" nameKey="status" innerRadius={45} outerRadius={75} paddingAngle={2}>
-                  {statusBreakdown.map((_, i) => (
-                    <Cell key={i} fill={PIE[i % PIE.length]} />
+                  {statusBreakdown.map((s, i) => (
+                    <Cell key={i} fill={statusColor(s.status, i)} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="mt-2 space-y-1.5">
-              {statusBreakdown.map((s) => (
+              {statusBreakdown.map((s, i) => (
                 <div key={s.status} className="flex items-center justify-between text-sm">
-                  <Badge variant={STATUS_TONE[s.status] ?? "secondary"}>{s.status.toLowerCase()}</Badge>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ background: statusColor(s.status, i) }}
+                    />
+                    <Badge variant={STATUS_TONE[s.status] ?? "secondary"}>{s.status.toLowerCase()}</Badge>
+                  </span>
                   <span className="font-medium">{s.count}</span>
                 </div>
               ))}
