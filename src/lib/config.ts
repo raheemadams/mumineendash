@@ -23,6 +23,13 @@ export const DEFAULT_MEMBERSHIP_DUES: {
  */
 export const PLACEHOLDER_EMAIL = "mumineenbroadcast@gmail.com";
 
+/** Online payment / donation page (MohID) linked from the outreach "Pay" button. */
+export const PAYMENT_URL =
+  "https://us.mohid.co/tx/houston/masjidulmumineenhous/masjid/online/donation";
+
+/** Label shown on the payment button in outreach emails. */
+export const PAYMENT_BUTTON_LABEL = "Pay / Renew Membership";
+
 /** True when the address looks like a real, individually-deliverable email. */
 export function isDeliverableEmail(email: string | null | undefined): boolean {
   const e = (email ?? "").trim().toLowerCase();

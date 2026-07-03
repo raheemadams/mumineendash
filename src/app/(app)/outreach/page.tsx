@@ -16,15 +16,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useStore } from "@/lib/store/provider";
-import { isDeliverableEmail } from "@/lib/config";
+import { isDeliverableEmail, PAYMENT_URL, PAYMENT_BUTTON_LABEL } from "@/lib/config";
 import { sendCampaignAction, type CampaignResult } from "@/lib/actions/campaigns";
 
 const DEFAULT_SUBJECT = "Renew your Masjid Mumineen membership";
 const DEFAULT_BODY = `Assalamu alaikum {{firstName}},
 
-We noticed your Masjid Mumineen membership is currently inactive, and we'd love to welcome you back. You can renew simply by paying your membership dues.
-
-[ Add your payment instructions here — e.g. "Zelle to payments@masjidulmumineen.org" ]
+We noticed your Masjid Mumineen membership is currently inactive, and we'd love to welcome you back. You can renew your membership securely online using the button below.
 
 JazakAllahu khairan,
 Masjid Mumineen`;
@@ -37,6 +35,7 @@ export default function OutreachPage() {
   const [status, setStatus] = useState("INACTIVE");
   const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [body, setBody] = useState(DEFAULT_BODY);
+  const [includePay, setIncludePay] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<CampaignResult | null>(null);
@@ -65,7 +64,7 @@ export default function OutreachPage() {
     setSending(true);
     setResult(null);
     try {
-      const res = await sendCampaignAction({ status, subject, body });
+      const res = await sendCampaignAction({ status, subject, body, includePayButton: includePay });
       setResult(res);
     } catch (e) {
       setResult({
@@ -142,6 +141,21 @@ export default function OutreachPage() {
                 <code className="rounded bg-[var(--color-muted)] px-1">{"{{name}}"}</code> are replaced with each
                 member&apos;s name.
               </p>
+
+              <label className="flex items-start gap-2 rounded-[var(--radius)] border border-[var(--color-border)] p-3">
+                <input
+                  type="checkbox"
+                  checked={includePay}
+                  onChange={(e) => setIncludePay(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]"
+                />
+                <span className="text-sm">
+                  <span className="font-medium">Include a &ldquo;{PAYMENT_BUTTON_LABEL}&rdquo; button</span>
+                  <span className="block text-xs text-[var(--color-muted-foreground)]">
+                    Links to your online donation page ({new URL(PAYMENT_URL).host}).
+                  </span>
+                </span>
+              </label>
             </CardContent>
           </Card>
         </div>
@@ -158,7 +172,19 @@ export default function OutreachPage() {
                     To: {sample.fullName} &lt;{sample.email}&gt;
                   </div>
                   <div className="border-b border-[var(--color-border)] px-4 py-2 font-medium">{previewSubject}</div>
-                  <div className="whitespace-pre-wrap px-4 py-3 text-sm">{previewBody}</div>
+                  <div className="px-4 py-3 text-sm">
+                    <div className="whitespace-pre-wrap">{previewBody}</div>
+                    {includePay && (
+                      <div className="mt-4 space-y-1.5">
+                        <span className="inline-block rounded-lg bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-primary-foreground)]">
+                          {PAYMENT_BUTTON_LABEL}
+                        </span>
+                        <div className="text-xs text-[var(--color-muted-foreground)]">
+                          Or open this link: <span className="text-[var(--color-primary)] underline">{PAYMENT_URL}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="py-8 text-center text-sm text-[var(--color-muted-foreground)]">
